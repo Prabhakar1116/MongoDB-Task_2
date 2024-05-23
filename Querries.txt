@@ -1,0 +1,245 @@
+// Creating user collection
+
+db.users.insertMany([
+  {user_id: 1, name: "Monkey.D.Luffy",age:19, course:"FSD"},
+  {user_id: 2, name: "Roronoa Zoro",age:23, course:"FSD"},
+  {user_id: 3, name: "Vinsmoke Sanji", age:21, course:"FSD"},
+  {user_id: 4, name: "Uzumaki Naruto", age:17, course:"FSD"},
+  {user_id: 5, name: "Kurozaki Ichigo", age:19, course:"FSD"}
+]
+)
+
+// Creating codekata collection
+
+db.codekata.insertMany([
+    { user_id: 1,std_id: ObjectId('664f37662408470e5d9c3b28'), total_qn:100, completed:30 },
+    { user_id: 2,std_id: ObjectId('664f37662408470e5d9c3b29'),total_qn:100, completed: 60 },
+    { user_id: 3,std_id: ObjectId('664f37662408470e5d9c3b2a'),total_qn:100, completed: 90 },
+    { user_id: 4, std_id: ObjectId('664f37662408470e5d9c3b2b'), total_qn:100, completed: 41 },
+    { user_id: 5,std_id: ObjectId('664f37662408470e5d9c3b2c'),total_qn:100, completed: 71 }
+])
+
+// Creating attendance collection
+
+db.attendance.insertMany([
+    { userid: 1, topic_id: 2, attended: true, percentage: 90 },
+    { userid: 2, topic_id: 5, attended: true, percentage: 93 },
+    { userid: 3, topic_id: 3, attended:false, percentage: 80},
+    { userid: 4, topic_id: 1, attended: true, percentage: 95 },
+    { userid: 5, topic_id: 4, attended: false, percentage: 78 }
+])
+
+// Creating topics collection
+
+db.topics.insertMany([
+{topic_id: 1, topic:"js_Day1","month":"october"},
+{topic_id: 2, "topic":"javascript_Day2","month":"october"},
+{topic_id: 3, "topic":"javascript_Day3","month":"october"},
+{topic_id: 4, "topic":"html_Day1","month":"november"},
+{topic_id: 5, "topic":"html_Day2", "month":"november"}]
+)
+
+// Creating tasks collection
+
+db.tasks.insertMany([
+    { task_id: 1, user_id: 1, task: "JS Task", due_date: new Date("16-Oct-2020"), submitted: true,"attendance":"present" },
+    { task_id: 2,user_id: 2, task: "CSS Task", due_date: new Date("20-Oct-2020"), submitted: true,"attendance":"present" },
+    { task_id: 3,user_id: 3, task: "HTML Task", due_date: new Date("29-Oct-2020"), submitted: false,"attendance":"absent"},
+    { task_id: 4, user_id: 4, task: "React Task", due_date: new Date("01-Nov-2020"), submitted: true,"attendance":"present"},
+    { task_id: 5, user_id: 5, task: "MongoDB task", due_date: new Date("09-Nov-2020"), submitted: false,"attendance":"absent"}
+])
+
+// Creating company_drives collection
+
+db.company_drives.insertMany([
+  {company_name: "Google",date: new Date("2020-10-20"),no_of_attended: 3,students_appeared: [1, 2, 3]},
+  {company_name: "Microsoft",date: new Date("2020-11-15"),no_of_attended: 4,students_appeared: [2, 3, 4, 5]},
+  {company_name: "Amazon",date: new Date("2020-12-05"),no_of_attended: 2,students_appeared: [1, 4]},
+  {company_name: "Facebook",date: new Date("2021-01-10"),no_of_attended: 5,students_appeared: [1, 2, 3, 4, 5]},
+  {company_name: "Apple",date: new Date("2021-02-20"),no_of_attended: 3,students_appeared: [3, 4, 5]}
+])
+
+
+// Creating mentors collection
+
+db.mentors.insertMany(
+[
+  {"mentor_name": "Silvers Rayleigh","mentees_count": 35},
+  {"mentor_name": "Dracule Mihawk","mentees_count": 14},
+  {"mentor_name": "Zeff","mentees_count": 11},
+  {"mentor_name": "Jiraiya","mentees_count": 9},
+  {"mentor_name": "Kisuke Urahara","mentees_count": 44}
+]
+)
+-----------------------------------------------------------------------------------------------------------------------
+
+1. Find all the topics and tasks which are thought in the month of October
+
+db.topics.find({month:"october"})
+{
+  _id: ObjectId('664f43962408470e5d9c3b4b'),
+  topic_id: 1,
+  topic: 'js_Day1',
+  month: 'october'
+}
+{
+  _id: ObjectId('664f43962408470e5d9c3b4c'),
+  topic_id: 2,
+  topic: 'javascript_Day2',
+  month: 'october'
+}
+
+// and so on
+------------------------------------------------------------------------------------------------------
+
+2. Find all the company drives which appeared between 15-oct-2020 and 31-oct-2020
+
+db.company_drives.aggregate([
+  {
+    $match: {
+      date: {
+        $gt: new Date("2020-10-15"),
+        $lt: new Date("2020-10-31")
+      }
+    }
+  },
+  {
+    $lookup: {
+      from: "users",
+      localField: "students_appeared",
+      foreignField: "user_id",
+      as: "students"
+    }
+  },
+  {
+    $project: {
+      company_name: 1,
+      date: 1,
+      students: "$students.name",
+      _id: 0
+    }
+  }
+]);
+
+{
+  company_name: 'Google',
+  date: 2020-10-20T00:00:00.000Z,
+  students: [
+    'Monkey.D.Luffy',
+    'Roronoa Zoro',
+    'Vinsmoke Sanji'
+  ]
+}
+
+--------------------------------------------------------------------------------------------------------
+
+3. Find all the company drives and students who are appeared for the placement
+
+db.company_drives.aggregate([
+  {
+    $lookup: {
+      from: "users",
+      localField: "students_appeared",
+      foreignField: "user_id",
+      as: "students_info"
+    }
+  },
+  {
+    $project: {
+      company_name: 1,
+      student_names: "$students_info.name"
+    }
+  }
+]).forEach(function(value) {
+  print("Company Name : " + value.company_name);
+  print("Students Appeared : " + JSON.stringify(value.student_names));
+});
+
+---------------------------------------------------------------------------------------------------------
+
+4. Find the number of problems solved by the user in codekata
+
+db.codekata.aggregate([
+  {
+    $lookup: {
+      from: "users",
+      localField: "user_id",
+      foreignField: "user_id",
+      as: "user_info"
+    }
+  },
+  {
+    $project: {
+      user_id: 1,
+      student_name: { $arrayElemAt: ["$user_info.name", 0] },
+      total_problems_solved: "$completed"
+    }
+  },
+  {
+    $project: {
+      user_id: 1,
+      student_name: 1,
+      total_problems_solved: 1,
+      _id: 0
+    }
+  }
+]);
+
+-------------------------------------------------------------------------------------------------------------
+
+5. Find all the mentors with who has the mentee's count more than 15
+
+db.mentors.find({mentees_count:{$gt:15}})
+
+{
+  _id: ObjectId('664f56b02408470e5d9c3b5f'),
+  mentor_name: 'Silvers Rayleigh',
+  mentees_count: 35
+}
+
+{
+  _id: ObjectId('664f56b02408470e5d9c3b63'),
+  mentor_name: 'Kisuke Urahara',
+  mentees_count: 44
+}
+-----------------------------------------------------------------------------------------------------------------
+
+6. Find the number of users who are absent and task is not submitted between 15-oct-2020 and 31-oct-2020
+
+db.tasks.aggregate([
+  {
+    $match: {
+      due_date: {
+        $gt: new Date("2020-10-16"),
+        $lt: new Date("2020-10-31")
+      }
+    }
+  },
+  {
+    $lookup: {
+      from: "users",
+      localField: "user_id",
+      foreignField: "user_id",
+      as: "user"
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      "User Name": { $arrayElemAt: ["$user.name", 0] },
+      Task: "$task",
+      Due_Date: "$due_date",
+      Attendance: "$attendance",
+      "Task Submission": "$submitted"
+    }
+  }
+]).forEach(function(task) {
+  print("User Name: " + task["User Name"]);
+  print("Task: " + task["Task"]);
+  print("Due Date: " + task["Due_Date"]);
+  print("Attendance: " + task["Attendance"]);
+  print("Task Submission: " + task["Task Submission"]);
+});
+
+
+------------------------------------------------------------------------------------------------------------------
